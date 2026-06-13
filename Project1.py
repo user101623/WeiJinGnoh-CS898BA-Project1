@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from scipy import stats
+import random
+import re
+from matplotlib.gridspec import GridSpec
 
 # Part 2, Task 1: Find and Print Basic Image Statistics
 img = cv2.imread('HW1_IMG_CS898BA.png')
@@ -21,7 +24,7 @@ print(f"  Min: {np.min(b_channel)}")
 print(f"  Max: {np.max(b_channel)}")
 print(f"  Average: {np.mean(b_channel):.2f}")
 print(f"  Median: {np.median(b_channel)}")
-print(f"  Mode: {int(stats.mode(b_channel, axis=None, keepdims=True).mode[0])}")
+print(f"  Mode: {int(stats.mode(b_channel, axis=None, keepdims=True).mode.item())}")
 print(f"  Skew: {stats.skew(b_channel, axis=None)}")
 print(f"  Range: {int(np.ptp(b_channel))}")
 print(f"  Standard Deviation: {np.std(b_channel)}")
@@ -33,7 +36,7 @@ print(f"  Min: {np.min(g_channel)}")
 print(f"  Max: {np.max(g_channel)}")
 print(f"  Average: {np.mean(g_channel):.4f}")
 print(f"  Median: {np.median(g_channel)}")
-print(f"  Mode: {int(stats.mode(g_channel, axis=None, keepdims=True).mode[0])}")
+print(f"  Mode: {int(stats.mode(g_channel, axis=None, keepdims=True).mode.item())}")
 print(f"  Skew: {stats.skew(g_channel, axis=None)}")
 print(f"  Range: {int(np.ptp(g_channel))}")
 print(f"  Standard Deviation: {np.std(g_channel)}")
@@ -45,7 +48,7 @@ print(f"  Min: {np.min(r_channel)}")
 print(f"  Max: {np.max(r_channel)}")
 print(f"  Average: {np.mean(r_channel):.4f}")
 print(f"  Median: {np.median(r_channel)}")
-print(f"  Mode: {int(stats.mode(r_channel, axis=None, keepdims=True).mode[0])}")
+print(f"  Mode: {int(stats.mode(r_channel, axis=None, keepdims=True).mode.item())}")
 print(f"  Skew: {stats.skew(r_channel, axis=None):.4f}")
 print(f"  Range: {int(np.ptp(r_channel))}")
 print(f"  Standard Deviation: {np.std(r_channel):.4f}")
@@ -167,6 +170,7 @@ sigmas = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
 
 # Final image pool that contains all 168 images
 final_image_pool = []
+total_images_generated = 0
 
 for label_name, current_frame in compilation_image_pool:
     # 1. Save the baseline unblurred version (Sigma = 0.0)
@@ -184,3 +188,154 @@ for label_name, current_frame in compilation_image_pool:
         final_image_pool.append((name_s, blurred_frame))
         total_images_generated += 1
 print(f"Successfully exported {total_images_generated} images.")
+
+# Part 3, Task 1-3: Creating Subsets
+
+# Setting seed
+random.seed(42)
+
+# Copy and shuffle the final image pool to create a randomized version for subset selection
+shuffled_pool = final_image_pool.copy()
+random.shuffle(shuffled_pool)
+
+# Partition into 4 equal subsets of 42 images each
+subset_size = 42
+subsets = [shuffled_pool[i:i + subset_size] for i in range(0, len(shuffled_pool), subset_size)]
+
+# Select Subset 2 for our active edge detection evaluation pipeline
+active_subset = subsets[1] 
+print (f"Chosen subset: Subset 2 with {len(active_subset)} images.")
+
+# Part 3, Task 4: Edge Detection
+os.makedirs("output_edges", exist_ok=True)
+os.makedirs("output_plots", exist_ok=True)
+
+BG_COLOR = '#363636'
+TEXT_COLOR = 'white'
+generated_plot_paths = []
+
+COLOR_SPACE_LABEL = {
+    '': 'BGR', 'grayscale': 'Grayscale', 'binary': 'Binary',
+    'HSV': 'HSV', 'CIELAB': 'CIELAB', 'HLS': 'HLS', 'equalized': 'Equalized'
+}
+
+# Prewitt directional kernels
+px = np.array([[1, 0, -1], [1, 0, -1], [1, 0, -1]], dtype=np.float32)
+py = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]], dtype=np.float32)
+
+for img_name, img_matrix in active_subset:
+    # 1. Edge Detection Logic
+    gray = cv2.cvtColor(img_matrix, cv2.COLOR_BGR2GRAY) if len(img_matrix.shape) == 3 else img_matrix.copy()
+    filters = {
+        "sobel": np.uint8(np.clip(cv2.magnitude(cv2.Sobel(gray, cv2.CV_64F, 1, 0), cv2.Sobel(gray, cv2.CV_64F, 0, 1)), 0, 255)),
+        "laplacian": np.uint8(np.clip(np.absolute(cv2.Laplacian(gray, cv2.CV_64F)), 0, 255)),
+        "canny": cv2.Canny(gray, 50, 150),
+        "prewitt": np.uint8(np.clip(cv2.magnitude(cv2.filter2D(gray, -1, px).astype(float), cv2.filter2D(gray, -1, py).astype(float)), 0, 255))
+    }
+    for name, edge_img in filters.items():
+        cv2.imwrite(f"output_edges/{img_name}_edge_{name}.png", edge_img)
+
+    # 2. Metadata Parsing
+    t_idx = 0 if "_t1" in img_name else 1 if "_t2" in img_name else 0
+    cfg = affine_transformation_configs[t_idx % len(affine_transformation_configs)]
+    t_details = f"{cfg[0].capitalize()}({cfg[1]}), {cfg[2].capitalize()}({cfg[3]})"
+    sigma_val = re.search(r'sigma_([\d.]+)', img_name).group(1) if 'sigma_' in img_name else "0.0"
+    cs_key = img_name.split('_')[1]
+    header_str = (f"Original\n→ Color Space: {COLOR_SPACE_LABEL.get(cs_key, cs_key.capitalize())}\n"
+                  f"→ Transformation: {t_details}\n→ Gaussian Blur (σ): {sigma_val}")
+
+    # 3. Canvas Initialization (3x3 GridSpec)
+    fig = plt.figure(figsize=(10, 12), facecolor=BG_COLOR)
+    fig.text(0.5, 0.97, header_str, ha='center', va='top', color=TEXT_COLOR, fontsize=12, family='monospace', linespacing=1.8)
+    gs = GridSpec(3, 3, figure=fig, top=0.76, bottom=0.04, left=0.04, right=0.96, hspace=0.25, wspace=0.1)
+    
+    panels = {
+        (0, 1): ('Sobel Edge', filters['sobel']),
+        (1, 0): ('Laplacian Edge', filters['laplacian']),
+        (1, 1): ('Input Image', img_matrix),
+        (1, 2): ('Canny Edge', filters['canny']),
+        (2, 1): ('Prewitt Edge', filters['prewitt']),
+    }
+    
+    # 4. Render
+    for (r, c), (title, im) in panels.items():
+        ax = fig.add_subplot(gs[r, c])
+        ax.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB) if im is not None and im.ndim == 3 else im, cmap='gray')
+        ax.set_title(title, color=TEXT_COLOR, fontsize=11, pad=8)
+        ax.set_facecolor(BG_COLOR)
+        ax.axis('off')
+
+    plt.savefig(f"output_plots/{img_name}_comparison.png", facecolor=BG_COLOR, dpi=100)
+    plt.close(fig)
+
+# Part 3, Task 8: Comparison Plots
+for img_name, img_matrix in active_subset:
+    # 1. Precise Extraction
+    # Map t1/t2 to index 0/1 from your config list
+    t_idx = 0 if "_t1" in img_name else 1 if "_t2" in img_name else 0
+    cfg = affine_transformation_configs[t_idx % len(affine_transformation_configs)]
+    t_details = f"{cfg[0].capitalize()}({cfg[1]}), {cfg[2].capitalize()}({cfg[3]})"
+    
+    sigma_val = re.search(r'sigma_([\d.]+)', img_name).group(1) if 'sigma_' in img_name else "0.0"
+    cs_key = img_name.split('_')[1] # Extracts 'binary', 'hsv', etc.
+
+    # 2. Build Header String
+    header_str = (
+        f"Original\n"
+        f"→ Color Space: {COLOR_SPACE_LABEL.get(cs_key, cs_key.capitalize())}\n"
+        f"→ Transformation: {t_details}\n"
+        f"→ Gaussian Blur (σ): {sigma_val}"
+    )
+
+    # 3. Load Images
+    sobel = cv2.imread(f"output_edges/{img_name}_edge_sobel.png")
+    laplacian = cv2.imread(f"output_edges/{img_name}_edge_laplacian.png")
+    canny = cv2.imread(f"output_edges/{img_name}_edge_canny.png")
+    prewitt = cv2.imread(f"output_edges/{img_name}_edge_prewitt.png")
+
+    # 4. Create 3x3 Grid
+    fig = plt.figure(figsize=(10, 12), facecolor=BG_COLOR)
+    fig.text(0.5, 0.97, header_str, ha='center', va='top',
+             color=TEXT_COLOR, fontsize=12, family='monospace', linespacing=1.8)
+
+    gs = GridSpec(3, 3, figure=fig, top=0.76, bottom=0.04, left=0.04, right=0.96, hspace=0.25, wspace=0.1)
+    
+    panels = {
+        (0, 1): ('Sobel Edge', sobel),
+        (1, 0): ('Laplacian Edge', laplacian),
+        (1, 1): ('Input Image', img_matrix),
+        (1, 2): ('Canny Edge', canny),
+        (2, 1): ('Prewitt Edge', prewitt),
+    }
+    
+    for (r, c), (title, im) in panels.items():
+        ax = fig.add_subplot(gs[r, c])
+        ax.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB) if im is not None and im.ndim == 3 else im, cmap='gray')
+        ax.set_title(title, color=TEXT_COLOR, fontsize=11, pad=8)
+        ax.set_facecolor(BG_COLOR)
+        ax.axis('off')
+
+    out_path = os.path.join('output_plots', f"{img_name}_comparison.png")
+    fig.savefig(out_path, facecolor=BG_COLOR, dpi=100)
+    plt.close(fig)
+    generated_plot_paths.append(out_path)
+
+# 5. README Injection
+README_PATH = 'README.md'
+if os.path.exists(README_PATH):
+    # Filter paths
+    comparison_samples = [p for p in generated_plot_paths if "_comparison.png" in p]
+    readme_samples = random.sample(comparison_samples, min(6, len(comparison_samples)))
+    
+    with open(README_PATH, 'r+') as f:
+        content = f.read()
+        marker = "# Output Examples"
+        if marker in content:
+            head, tail = content.split(marker, 1)
+            new_content = head + marker + "\n\n" + \
+                          "\n".join([f"![{os.path.basename(p)}]({p})" for p in readme_samples]) + \
+                          (tail.split('\n\n', 1)[-1] if len(tail.split('\n\n', 1)) > 1 else "")
+            f.seek(0)
+            f.write(new_content)
+            f.truncate()
+print("\nSUCCESS")
