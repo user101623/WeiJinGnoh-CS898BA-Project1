@@ -13,3 +13,4 @@
 # AI Usage Log - Homework 2
 | Date and Time | Prompt | Tool | Response Synopsis | Change |
 | :--- | :--- | :--- | :--- | :--- |
+| 06/27/2026 05:03 PM | "how to apply otsu automatic thresholding... and apply adaptive thresholding (Gaussian window) to the grayscale version of your normalized image" | Gemini | Provided OpenCV implementation for `cv2.threshold` with Otsu's flag and `cv2.adaptiveThreshold` with Gaussian settings. | Implemented the code for Part 3 for Project2.py |
