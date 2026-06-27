@@ -14,3 +14,5 @@
 | Date and Time | Prompt | Tool | Response Synopsis | Change |
 | :--- | :--- | :--- | :--- | :--- |
 | 06/27/2026 05:03 PM | "how to apply otsu automatic thresholding... and apply adaptive thresholding (Gaussian window) to the grayscale version of your normalized image" | Gemini | Provided OpenCV implementation for `cv2.threshold` with Otsu's flag and `cv2.adaptiveThreshold` with Gaussian settings. | Implemented the code for Part 3 for Project2.py |
+| 06/27/2026 06:05 PM | "how to apply k-means clustering... dark and requires some brightness adjustment" | Gemini | Provided K-Means pipeline with V-channel contrast boosting, K-Means++ initialization, and brightness-sorted cluster indexing for deterministic results. | Implemented the code for Part 4 |
+| 06/27/2026 06:20 PM | "how to set opencv seed" | Gemini | Explained the need for reproducibility in K-Means; provided a robust dual-seeding approach using `np.random.seed(42)` and a `try-except` block for `cv2.setRNGSeed(42)`. | Added line 33 to ensure output reproducibility |
