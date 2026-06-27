@@ -1,11 +1,11 @@
-# Homework 1: Image Analysis and Computer Vision
+# Homework 1 & 2: Image Analysis and Computer Vision
 **Course:** CS898BA
 
 ## Setup and Execution
 1. Clone the repository.
 2. Install all required Python and OpenCV libraries using the command:
    `pip install -r requirements.txt`
-3. Run `python Project1.py`
+3. Run `python Project1.py` // `python Project2.py`
 
 ---
 ## Code Explanations
