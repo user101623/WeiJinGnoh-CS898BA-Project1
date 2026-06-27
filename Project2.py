@@ -92,3 +92,83 @@ k_means_mask = np.where(label_map == FIGURE_CLUSTER_ID, 255, 0).astype(np.uint8)
 kmeans_result = cv2.bitwise_and(normalized_img, normalized_img, mask=k_means_mask)
 cv2.imwrite('HW2_CS898BA_KMeans_Final_Mask.png', k_means_mask)
 cv2.imwrite('HW2_CS898BA_KMeans_Foreground.png', kmeans_result)
+
+# Part 5.2: Quantitaive Comparison (Pseudo-Ground Truth)
+# Load the ground truth mask and ensure it's binary
+gt = cv2.imread('HW2_Ground_Truth.png', cv2.IMREAD_GRAYSCALE)
+gt_bool = (gt > 127).astype(bool)
+
+# Lists of all masks to compare
+mask_files = {
+    'Otsu': 'HW2_CS898BA_Otsu_Mask.png',
+    'Adaptive': 'HW2_CS898BA_Adaptive_Mask.png',
+    'K-Means': 'HW2_CS898BA_KMeans_Final_Mask.png'
+}
+
+print(f"{'Method'} | {'IoU'} | {'Dice'}")
+
+for name, filename in mask_files.items():
+    # Load and threshold the mask
+    mask = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
+    mask_bool = (mask > 127).astype(bool)
+    
+    # Calculate intersection and union
+    intersection = np.logical_and(mask_bool, gt_bool).sum()
+    union = np.logical_or(mask_bool, gt_bool).sum()
+    
+    # Calculate metrics
+    iou = intersection / union if union > 0 else 0
+    dice = (2. * intersection) / (mask_bool.sum() + gt_bool.sum()) if (mask_bool.sum() + gt_bool.sum()) > 0 else 0
+    
+    print(f"{name} | {iou} | {dice:.4f}")
+
+# Part 5.3: Visualization
+# Define the layout
+BG_COLOR = '#363636'
+TEXT_COLOR = 'white'
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+
+# List of images and their titles
+images = [
+    ('Original', 'HW1_IMG_CS898BA.png'),
+    ('Normalized', 'HW2_IMG_CS898BA_Normalized.png'),
+    ('Ground Truth', 'HW2_Ground_Truth.png'),
+    ('Otsu Mask', 'HW2_CS898BA_Otsu_Mask.png'),
+    ('Adaptive Mask', 'HW2_CS898BA_Adaptive_Mask.png'),
+    ('K-Means Mask', 'HW2_CS898BA_KMeans_Final_Mask.png')
+]
+
+# Plotting loop
+for i, ax in enumerate(axes.flatten()):
+    title, filename = images[i]
+    img = cv2.imread(filename)
+    
+    if img is not None:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        ax.imshow(img)
+    
+    ax.set_title(title)
+    ax.axis('off')
+
+plt.tight_layout()
+plt.savefig('HW2_CS898BA_Segmentation_Comparison.png')
+
+# Update README.md with the new plot
+plot_markdown = "\n### Segmentation Comparison\n![Segmentation Comparison](HW2_Segmentation_Comparison.png)\n"
+marker = "#### Part 5.3"
+
+if os.path.exists('README.md'):
+    # Read the file content
+    with open('README.md', 'r') as f:
+        lines = f.readlines()
+    
+    # Check if the marker exists and the plot isn't already there
+    if marker in "".join(lines) and "![Segmentation Comparison]" not in "".join(lines):
+        with open('README.md', 'w') as f:
+            for line in lines:
+                f.write(line)
+                if marker in line:
+                    f.write(plot_markdown)
+        print("Successfully inserted image after Part 5.3 in README.md.")
+    else:
+        print("Marker not found or plot already exists.")

@@ -78,3 +78,36 @@ Explanation: Constructs a 3x3 diamond-layout visualization for each image, embed
 
 ### Homework 2
 #### Part 2
+The image is split into individual Blue, Green, and Red channels. Each channel is processed using cv2.equalizeHist to independently expand its contrast range. The channels are then merged back using cv2.merge to produce a normalized color image, which helps balance the overall brightness and visibility of the subject.
+
+#### Part 3.1
+This method isolates the foreground by converting the normalized image to grayscale, then applying Otsu’s thresholding for an automated global cutoff and Adaptive thresholding for local intensity adjustments that handle uneven lighting. Finally, cv2.bitwise_and(normalized_img, normalized_img, mask=mask) uses these masks to extract the foreground object from the original image.
+
+#### Part 3.2
+The normalized image is converted to HSV and reshaped into an (H*W, 3) floating-value array. cv2.kmeans is called for K = 3, 4, 5 with KMEANS_PP_CENTERS and attempts=10. After each call, the cluster indices are reordered by ascending centroid V (brightness) so cluster 0 is always the darkest and cluster K-1 is always the brightest—this ensures consistent labeling of the alien mask across different K values.
+
+#### Part 4
+The image is segmented using K-Means clustering, which starts by converting the input to the HSV color space and boosting the Value (V) channel to enhance contrast. After flattening the image into pixel data, the algorithm groups the pixels into K clusters—testing values between 3 and 5—and sorts them by brightness to ensure consistent labeling. Finally, the script generates a binary mask for the target cluster and uses cv2.bitwise_and to extract the figure from the normalized image.
+
+#### Part 5.1
+1. Otsu Thresholding
+Advantage: 
+- Provides an approach that effectively separates foreground from background without manual parameter tuning.
+- Computationally efficient and works well if the scene is relatively bright.
+Disadvantage:
+- Struggles significantly with the uneven illumination of a doorbell camera.
+
+2. Adaptive Thresholding
+Advantage: Excels at handling local illumination variations by calculating thresholds for small image regions.
+Disadvantage: Highly sensitive to image noise.
+
+3. K-Means Clustering
+Advantage: It is the best at isolating the figure as a solid piece by grouping similar colors and brightness together.
+Disadvantage: Required to manually select the number of clusters (K).
+
+#### Part 5.2
+The ground truth image is self-drawn to serve as a reference, against which each generated mask is evaluated by loading them as grayscale images via cv2.imread and converting them to boolean arrays. These boolean masks are then compared using np.logical_and and np.logical_or to compute intersection and union areas, which are applied to standard arithmetic formulas to derive the IoU and Dice Coefficient, providing a precise quantitative accuracy score for each segmentation method.
+
+#### Part 5.3
+### Segmentation Comparison
+![Segmentation Comparison](HW2_Segmentation_Comparison.png)
