@@ -1,4 +1,4 @@
-# AI Usage Log
+# AI Usage Log - Homework 1
 
 | Date and Time | Prompt | Tool | Response Synopsis | Change |
 | :--- | :--- | :--- | :--- | :--- |
@@ -9,3 +9,7 @@
 | 06/13/2026 12:35 PM | "how to apply gaussian blur to image given the levels of sigma in python" | Gemini | Explained dynamic `cv2.GaussianBlur` kernel window size derivation using the `(0, 0)` tuple with explicit `sigmaX` and `sigmaY` assignments. | Implemented the code for Task 2, Part 8 |
 | 06/13/2026 12:56 PM | "how to perform edge detection techniques like sobel, laplacian, canny and prewitt on a subset of 42 images" | Gemini | Provided a loop using a compact filter dictionary to apply all 4 edge tracking filters, saving individual outputs to `output_edges/` and 1x5 Matplotlib grids to `output_plots/`. | Implemented the code for Part 3, Task 4 |
 | 06/13/2026 1:35 PM | "how to create a diamond shaped image plot with one on top, 3 in the middle, 1 on the bottom with a title on top of each like the one shown in image" | Gemini | Provided a direct Matplotlib script mapping cross coordinates on a dark background using a 3x3 `GridSpec` matrix block. | Implemented the code for Part 3, Task 8 |
+
+# AI Usage Log - Homework 2
+| Date and Time | Prompt | Tool | Response Synopsis | Change |
+| :--- | :--- | :--- | :--- | :--- |
