@@ -110,4 +110,4 @@ The ground truth image is self-drawn to serve as a reference, against which each
 
 #### Part 5.3
 ### Segmentation Comparison
-![Segmentation Comparison](HW2_Segmentation_Comparison.png)
+![Segmentation Comparison](HW2_CS898BA_Segmentation_Comparison.png)
