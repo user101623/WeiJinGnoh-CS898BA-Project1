@@ -153,8 +153,8 @@ for i, ax in enumerate(axes.flatten()):
 plt.tight_layout()
 plt.savefig('HW2_CS898BA_Segmentation_Comparison.png')
 
-# Update README.md with the new plot
-plot_markdown = "\n### Segmentation Comparison\n![Segmentation Comparison](HW2_Segmentation_Comparison.png)\n"
+# Adding the new segmentation comparison plot to README
+plot_markdown = "\n### Segmentation Comparison\n![Segmentation Comparison](HW2_CS898BA_Segmentation_Comparison.png)\n"
 marker = "#### Part 5.3"
 
 if os.path.exists('README.md'):
