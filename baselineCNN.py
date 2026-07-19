@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class BaselineCNN(nn.Module):
-    def __init__(self, num_classes=6, img_size=224):
+    def __init__(self, num_classes=6, img_size=224, dropout_rate=0.3):
         super().__init__()
         
         # 1. Feature Extractor
@@ -25,12 +25,11 @@ class BaselineCNN(nn.Module):
             dummy_input = torch.zeros(1, 3, img_size, img_size)
             flat_size = self.features(dummy_input).flatten().shape[0]
             
-        # 3. Classifier
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(flat_size, 256),
             nn.ReLU(),
-            nn.Dropout(0.3), 
+            nn.Dropout(dropout_rate),
             nn.Linear(256, num_classes)
         )
 

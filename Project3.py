@@ -82,10 +82,10 @@ print(f"Training on device: {device}")
 # Initialize Model, Loss, and Optimizer
 model = BaselineCNN(num_classes=len(unique_labels), img_size=224).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training Loop
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 NUM_EPOCHS = 10
 BASELINE_WEIGHTS_PATH = Path("baseline_model.pth")
 PLOT_PATH = Path("baseline_curves.png")
@@ -157,3 +157,84 @@ def save_performance_plot(train_losses, val_losses, train_accs, val_accs, save_p
     print(f"Summary plot saved as: {save_path}")
 
 save_performance_plot(train_losses, val_losses, train_accs, val_accs)
+
+# PART 4: Hyperparameter Optimization using Grid Search
+# 1. Define the required tuning grids
+search_learning_rates = [0.01, 0.001, 0.0001]
+search_batch_sizes = [32, 64]
+search_dropout_rates = [0.3, 0.5]
+
+best_val_loss = float('inf')
+best_config = {}
+best_weights = None
+
+print("Starting Custom Grid Search Optimization...")
+
+# 2. Iterate through all possible combinations of hyperparameters
+for lr in search_learning_rates:
+    for bs in search_batch_sizes:
+        for dropout in search_dropout_rates:
+            print(f"\n[Evaluating Config] LR: {lr} | Batch Size: {bs} | Dropout: {dropout}")
+            
+            # Re-initialize dataloaders for the current batch size
+            current_train_loader = DataLoader(train_ds, batch_size=bs, shuffle=True, num_workers=0)
+            current_val_loader = DataLoader(val_ds, batch_size=bs, shuffle=False, num_workers=0)
+            
+            # Re-initialize model with the current dropout rate
+            tuning_model = BaselineCNN(
+                num_classes=len(unique_labels), 
+                img_size=224, 
+                dropout_rate=dropout
+            ).to(device)
+            
+            tuning_criterion = nn.CrossEntropyLoss()
+            tuning_optimizer = optim.Adam(tuning_model.parameters(), lr=lr)
+            
+            # Train for a designated tuning epoch count (e.g., 5-8 epochs for fast evaluation)
+            tuning_epochs = 6
+            trial_best_loss = float('inf')
+            
+            for epoch in range(1, tuning_epochs + 1):
+                # Train phase
+                tuning_model.train()
+                for imgs, labels in current_train_loader:
+                    imgs, labels = imgs.to(device), labels.to(device)
+                    tuning_optimizer.zero_grad(set_to_none=True)
+                    loss = tuning_criterion(tuning_model(imgs), labels)
+                    loss.backward()
+                    tuning_optimizer.step()
+                
+                # Validation phase
+                tuning_model.eval()
+                val_loss_sum = 0.0
+                with torch.no_grad():
+                    for imgs, labels in current_val_loader:
+                        imgs, labels = imgs.to(device), labels.to(device)
+                        preds = tuning_model(imgs)
+                        val_loss_sum += tuning_criterion(preds, labels).item() * labels.size(0)
+                
+                epoch_val_loss = val_loss_sum / len(current_val_loader.dataset)
+                if epoch_val_loss < trial_best_loss:
+                    trial_best_loss = epoch_val_loss
+            
+            print(f"-> Result: Best Validation Loss for this configuration = {trial_best_loss:.4f}")
+            
+            # Track the global best configuration
+            if trial_best_loss < best_val_loss:
+                best_val_loss = trial_best_loss
+                best_config = {"lr": lr, "batch_size": bs, "dropout": dropout}
+                best_weights = tuning_model.state_dict()
+
+# 3. Save the final optimized model weights
+OPTIMIZED_WEIGHTS_PATH = Path("optimized_model.pth")
+torch.save({
+    "model_state_dict": best_weights,
+    "hyperparameters": best_config,
+    "validation_loss": best_val_loss
+}, OPTIMIZED_WEIGHTS_PATH)
+
+print("\nGRID SEARCH COMPLETED SUCCESSFULLY!")
+print(f"Best Configuration Found: {best_config}")
+print(f"Lowest Validation Loss: {best_val_loss}")
+print(f"Optimized weights saved to: {OPTIMIZED_WEIGHTS_PATH.name}")
+print("==============================================")
