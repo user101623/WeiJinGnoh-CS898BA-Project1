@@ -17,3 +17,9 @@
 | 06/27/2026 06:05 PM | "how to apply k-means clustering... dark and requires some brightness adjustment" | Gemini | Provided K-Means pipeline with V-channel contrast boosting, K-Means++ initialization, and brightness-sorted cluster indexing for deterministic results. | Implemented the code for Part 4 |
 | 06/27/2026 06:20 PM | "how to set opencv seed" | Gemini | Explained the need for reproducibility in K-Means; provided a robust dual-seeding approach using `np.random.seed(42)` and a `try-except` block for `cv2.setRNGSeed(42)`. | Added line 33 to ensure output reproducibility |
 | 06/27/2026 06:50 PM | "how to calculate IoU and Dice coefficient for the 3 segmentation methods?" | Gemini | Provided the mathematical formulas and Python implementation steps (loading, binarizing, logical operations) for computing IoU and Dice metrics. | Implemented the code for Part 5, Task 2 |
+
+# AI Usage Log - Homework 3
+| Date and Time | Prompt | Tool | Response Synopsis | Change |
+| :--- | :--- | :--- | :--- | :--- |
+| July 19, 2026, 1:52 PM | how to load and stratify dataset to train test and val | Gemini | Explained using `scikit-learn`'s `train_test_split` with the `stratify` parameter to maintain class proportions. Provided a two-step approach to create training, validation, and test sets. | Implemented the code for Part 2 |
+| July 19, 2026, 2:01 PM | how to perform augmentation in pytorch for images | Gemini | Explained image augmentation techniques using `torchvision.transforms` (e.g., RandomHorizontalFlip, RandomRotation, Normalize). | Implemented the code for Part 2 |
