@@ -23,3 +23,5 @@
 | :--- | :--- | :--- | :--- | :--- |
 | July 19, 2026, 1:52 PM | how to load and stratify dataset to train test and val | Gemini | Explained using `scikit-learn`'s `train_test_split` with the `stratify` parameter to maintain class proportions. Provided a two-step approach to create training, validation, and test sets. | Implemented the code for Part 2 |
 | July 19, 2026, 2:01 PM | how to perform augmentation in pytorch for images | Gemini | Explained image augmentation techniques using `torchvision.transforms` (e.g., RandomHorizontalFlip, RandomRotation, Normalize). | Implemented the code for Part 2 |
+| July 19, 2026, 2:26 PM | how to implement a baseline CNN using PyTorch | Gemini | Provided a structured class definition for a CNN using `torch.nn`, including convolutional, pooling, and fully connected layers. | Implemented the code for Part 3.1|
+| July 19, 2026, 2:37 PM | run baseline cnn with crossentropyloss and adam optimizer | Gemini | Explained how to instantiate the model, configure `nn.CrossEntropyLoss` as the criterion, and initialize the `optim.Adam` optimizer for training. | Implemented the code for Part 3.2 |
