@@ -111,3 +111,31 @@ The ground truth image is self-drawn to serve as a reference, against which each
 #### Part 5.3
 ### Segmentation Comparison
 ![Segmentation Comparison](HW2_CS898BA_Segmentation_Comparison.png)
+
+### Homework 3
+#### Part 5
+The baseline and selected custom grid-search model were evaluated once on the held-out 145-image test set. The selected model used a learning rate of 0.001, batch size 64, and dropout 0.5 because it produced the lowest validation loss (0.8692) during the fixed 6-epoch tuning experiment.
+
+### Qualitative analysis
+Training augmentation used random horizontal flips and brightness adjustments, and it was applied only to training images. These transforms expose the model to left/right orientation and lighting variations without changing validation or test data. There was no separate no-augmentation ablation, so their individual effect cannot be measured causally. The training history shows consistent convergence: baseline validation loss improved across epochs, reaching a peak validation accuracy of 81.25% at epoch 10.
+
+Learning rate and batch configuration had noticeable tuning effects during the grid search. A higher learning rate of 0.01 yielded higher validation losses overall (reaching up to 1.2486), while smaller learning rates showed varied convergence depending on the dropout rate. The selected 0.001 learning rate combined with a batch size of 64 and a dropout rate of 0.5 achieved the lowest validation loss of 0.8692, showing that a heavier dropout regularization paired with a larger batch size helped stabilize the optimized network during tuning.
+
+### Quantitative Comparison
+| Model | Accuracy | Macro Precision | Macro Recall | Macro F1 | Weighted F1 |
+|---|---:|---:|---:|---:|---:|
+| Baseline CNN | 78.62% | 79.40% | 75.68% | 76.31% | 80.32% |
+| Optimized CNN | 81.38% | 78.69% | 76.22% | 75.26% | 76.87% |
+
+The optimized model achieved 81.38% test accuracy, outperforming the baseline model which achieved 78.62%. The optimized model scored higher across overall accuracy, macro F1, and weighted F1 metrics.
+
+| Class | Support | Baseline Precision | Baseline Recall | Baseline F1 | Optimized Precision | Optimized Recall | Optimized F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| fish_Bete | 29 | 0.7241 | 0.7241 | 0.7241 | 0.8750 | 0.4828 | 0.6222 |
+| fish_Cray | 12 | 0.6667 | 0.3333 | 0.4444 | 0.6667 | 0.6667 | 0.6667 |
+| fish_Discuss | 29 | 0.9667 | 1.0000 | 0.9831 | 0.8235 | 0.9655 | 0.8889 |
+| fish_Gold | 31 | 0.7750 | 1.0000 | 0.8732 | 0.7561 | 1.0000 | 0.8611 |
+| fish_Guppy | 24 | 0.9091 | 0.8333 | 0.8696 | 0.7667 | 0.9583 | 0.8519 |
+| fish_Oscar | 20 | 0.7222 | 0.6500 | 0.6842 | 0.8333 | 0.5000 | 0.6250 |
+
+![Baseline and Optimized CNN Comparison](evaluation_summary.png)
