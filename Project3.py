@@ -10,6 +10,9 @@ from baselineCNN import BaselineCNN
 from torch import nn, optim
 from matplotlib import pyplot as plt
 
+import gc
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, ConfusionMatrixDisplay
+
 SEED = 42
 torch.manual_seed(SEED)
 np.random.seed(SEED)
@@ -35,7 +38,7 @@ class FishDataset(Dataset):
 
 # 2. Prepare File Paths and Labels
 data_dir = Path('fish_dataset')
-image_paths = list(data_dir.glob('*/*.png'))
+image_paths = list(data_dir.glob('*/*.jpg'))
 labels = [p.parent.name for p in image_paths]
 
 # Create label mapping
@@ -159,7 +162,6 @@ def save_performance_plot(train_losses, val_losses, train_accs, val_accs, save_p
 save_performance_plot(train_losses, val_losses, train_accs, val_accs)
 
 # PART 4: Hyperparameter Optimization using Grid Search
-# 1. Define the required tuning grids
 search_learning_rates = [0.01, 0.001, 0.0001]
 search_batch_sizes = [32, 64]
 search_dropout_rates = [0.3, 0.5]
@@ -224,6 +226,10 @@ for lr in search_learning_rates:
                 best_val_loss = trial_best_loss
                 best_config = {"lr": lr, "batch_size": bs, "dropout": dropout}
                 best_weights = tuning_model.state_dict()
+                
+            del tuning_model, tuning_optimizer, tuning_criterion, current_train_loader, current_val_loader
+            gc.collect()
+            torch.cuda.empty_cache()
 
 # 3. Save the final optimized model weights
 OPTIMIZED_WEIGHTS_PATH = Path("optimized_model.pth")
@@ -238,3 +244,80 @@ print(f"Best Configuration Found: {best_config}")
 print(f"Lowest Validation Loss: {best_val_loss}")
 print(f"Optimized weights saved to: {OPTIMIZED_WEIGHTS_PATH.name}")
 print("==============================================")
+
+# PART 5: Evaluation and Analysis
+baseline_model = BaselineCNN(num_classes=len(unique_labels), img_size=224).to(device)
+baseline_model.load_state_dict(torch.load("baseline_model.pth", map_location=device))
+baseline_model.eval()
+
+optimized_checkpoint = torch.load("optimized_model.pth", map_location=device)
+optimized_state_dict = optimized_checkpoint.get("model_state_dict", optimized_checkpoint)
+
+optimized_model = BaselineCNN(num_classes=len(unique_labels), img_size=224, dropout_rate=0.5).to(device)
+optimized_model.load_state_dict(optimized_state_dict)
+optimized_model.eval()
+
+def evaluate_model_predictions(loader, model, device=device):
+    model.eval()
+    true_targets = []
+    predicted_targets = []
+    
+    with torch.no_grad():
+        for images, targets in loader:
+            images = images.to(device)
+            outputs = model(images)
+            true_targets.append(targets.cpu())
+            predicted_targets.append(outputs.argmax(dim=1).cpu())
+            
+    return torch.cat(true_targets).numpy(), torch.cat(predicted_targets).numpy()
+
+# 2. Generate predictions for both models
+baseline_y_true, baseline_y_pred = evaluate_model_predictions(test_loader, baseline_model)
+optimized_y_true, optimized_y_pred = evaluate_model_predictions(test_loader, optimized_model)
+
+# Verify label consistency
+if not np.array_equal(baseline_y_true, optimized_y_true):
+    raise ValueError("Test set labels differ between model evaluation runs.")
+
+# 3. Print quantitative classification metrics
+print("\n--- Baseline Model Test Performance ---")
+print(classification_report(baseline_y_true, baseline_y_pred, target_names=unique_labels, digits=4, zero_division=0))
+print(f"Baseline Accuracy: {accuracy_score(baseline_y_true, baseline_y_pred):.2%}")
+
+print("\n--- Optimized Model Test Performance ---")
+print(classification_report(optimized_y_true, optimized_y_pred, target_names=unique_labels, digits=4, zero_division=0))
+print(f"Optimized Accuracy: {accuracy_score(optimized_y_true, optimized_y_pred):.2%}")
+
+# 4. Create Custom Multi-Panel Visualization Summary
+fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+
+epochs = range(1, len(train_losses) + 1)
+axes[0].plot(epochs, train_losses, label="Train Loss", linestyle="--")
+axes[0].plot(epochs, val_losses, label="Validation Loss")
+axes[0].set_title("Training vs Validation Loss")
+axes[0].set_xlabel("Epochs")
+axes[0].set_ylabel("Loss")
+axes[0].legend()
+axes[0].grid(True, alpha=0.3)
+
+axes[1].plot(epochs, train_accs, label="Train Accuracy", linestyle="--")
+axes[1].plot(epochs, val_accs, label="Validation Accuracy")
+axes[1].set_title("Training vs Validation Accuracy")
+axes[1].set_xlabel("Epochs")
+axes[1].set_ylabel("Accuracy")
+axes[1].set_ylim(0, 1)
+axes[1].legend()
+axes[1].grid(True, alpha=0.3)
+
+conf_matrix = confusion_matrix(optimized_y_true, optimized_y_pred)
+matrix_display = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=unique_labels)
+matrix_display.plot(ax=axes[2], cmap="Blues", colorbar=False, values_format="d")
+axes[2].set_title("Optimized Model Confusion Matrix")
+axes[2].tick_params(axis="x", labelrotation=45)
+
+plt.tight_layout()
+final_evaluation_plot = Path("evaluation_summary.png")
+plt.savefig(final_evaluation_plot, dpi=200)
+plt.show()
+
+print(f"\nEvaluation plot successfully generated and saved to: {final_evaluation_plot}")
